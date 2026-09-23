@@ -19,4 +19,20 @@ create policy "Anyone can add words" on public.words
 for insert with check (true);
 
 -- Needed for realtime updates in the app.
-alter publication supabase_realtime add table public.words;
+do $$
+begin
+  if not exists (
+    select 1
+    from pg_publication_tables
+    where pubname = 'supabase_realtime'
+      and schemaname = 'public'
+      and tablename = 'words'
+  ) then
+    alter publication supabase_realtime add table public.words;
+  end if;
+end $$;
+
+-- Allow users to delete words from the shared list.
+drop policy if exists "Anyone can delete words" on public.words;
+create policy "Anyone can delete words" on public.words
+for delete using (true);
